@@ -1,0 +1,140 @@
+import streamlit as st
+from pymongo import MongoClient
+
+# Connect to MongoDB
+client = MongoClient("mongodb://localhost:27017/")
+db = client["hospital"]
+patients_collection = db["patients"]
+
+# Streamlit interface
+st.title("Patient Registration Form")
+
+# Sidebar options
+st.sidebar.title("Options")
+option = st.sidebar.selectbox("Choose an action", ["Add Patient", "Update Patient", "Delete Patient"])
+
+def get_patient_by_id(patient_id):
+    return patients_collection.find_one({"patient_id": patient_id})
+
+# Form for adding a new patient
+if option == "Add Patient":
+    st.header("Add Patient Details")
+    patient_id = st.text_input("Patient ID")
+    patient_location = st.text_area("Patient Location")
+    registration_date = st.text_input("Registration Date")
+    name = st.text_input("Patient Name")
+    aadhar_number = st.text_input("Aadhar Number")
+    age = st.number_input("Patient Age", min_value=0, max_value=120, step=1)
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+    date_of_birth = st.text_input("Birth Date")
+    blood_group = st.selectbox("Blood Group", ["O+","O-","A+","A-","B+","B-","AB+","AB-"])
+    address = st.text_area("Address")
+    patient_contact = st.text_input("Patient Contact Number")
+    email = st.text_input("Patient Email")
+    parent_name = st.text_input("Parent/Guardian Name")
+    parent_contact_number = st.text_input("Parent/Guardian Number")
+    emergency_case = st.selectbox("Emergency?", ["Yes", "No"])
+    medical_history = st.text_input("Medical History")
+    admitted_date = st.text_input("Admitted Date")
+    admitted_time = st.text_input("Admitted Time")
+    insurance_id = st.text_input("Insurance ID")
+    status = st.selectbox("Status",["Alive", "Dead"])
+    if st.button("Add Patient"):
+        if patient_id and name and patient_contact:
+            # Add patient to database
+            patient = {
+                "patient_id": patient_id,
+                "patient_location": patient_location,
+                "registration_date": registration_date,
+                "name": name,
+                "aadhar_number": aadhar_number,
+                "age": age,
+                "gender": gender,
+                "date_of_birth": date_of_birth,
+                "blood_group": blood_group,
+                "address": address,
+                "patient_contact": patient_contact,
+                "email": email,
+                "parent_name": parent_name,
+                "parent_contact_number": parent_contact_number,
+                "emergency_case": emergency_case,
+                "medical_history": medical_history,
+                "admitted_date": admitted_date,
+                "admitted_time": admitted_time,
+                "insurance_id": insurance_id,
+                "status": status
+            }
+            patients_collection.insert_one(patient)
+            st.success("Patient added successfully!")
+        else:
+            st.error("Please fill in all required fields.")
+
+# Form for updating patient details
+elif option == "Update Patient":
+    st.header("Update Patient Details")
+
+    update_patient_id = st.text_input("Enter Patient ID to update")
+    if update_patient_id:
+        patient = get_patient_by_id(update_patient_id)
+        if patient:
+            st.write("Patient found. Update the details below:")
+            patient_location = st.text_input("Patient Location", value=patient.get("patient_location", ""))
+            registration_date = st.text_input("Registration Date", value=patient.get("registration_id", ""))
+            name = st.text_input("Name", value=patient.get("name", ""))
+            aadhar_number = st.text_input("Aadhar Number", value=patient.get("aadhar_number", ""))
+            age = st.number_input("Age", min_value=0, max_value=120, step=1, value=patient.get("age", 0))
+            gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(patient.get("gender", "")))
+            date_of_birth = st.text_input("Birth Date", value=patient.get("date.of.birth", ""))
+            address = st.text_area("Address", value=patient.get("address", ""))
+            patient_contact = st.text_input("Patient Contact Number", value=patient.get("patient_contact", ""))
+            blood_group = st.selectbox("Blood Group", ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"], index=["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"].index(patient.get("blood_group", "")))
+            email = st.text_input("Patient Email", value=patient.get("email", ""))
+            parent_name = st.text_input("Parent/Guardian Name", value=patient.get("parent_name", ""))
+            parent_contact_number=st.text_input("Parent/Guardian Number", value=patient.get("parent_contact_number", ""))
+            emergency_case = st.selectbox("Emergency", ["Yes", "No"], index=["Yes", "No"].index(patient.get("emergency_case", "")))
+            medical_history = st.text_input("Medical History", value=patient.get("medical history", ""))
+            admitted_date = st.text_input("Admitted Date", value=patient.get("admitted_date", ""))
+            admitted_time = st.text_input("Admitted Time", value=patient.get("admitted_time", ""))
+            insurance_id = st.text_input("Insurance ID", value=patient.get("insurance_id", ""))
+            status = st.selectbox("Status", ["Alive", "Dead"], index=["Alive", "Dead"].index(patient.get("status", "")))
+            if st.button("Update Patient"):
+                updated_patient = {
+                    "patient_location": patient_location,
+                    "registration_date": registration_date,
+                    "name": name,
+                    "aadhar_number": aadhar_number,
+                    "age": age,
+                    "gender": gender,
+                    "date_of_birth": date_of_birth,
+                    "blood_group": blood_group,
+                    "address": address,
+                    "patient_contact": patient_contact,
+                    "email": email,
+                    "parent_name": parent_name,
+                    "parent_contact_number": parent_contact_number,
+                    "emergency_case": emergency_case,
+                    "medical_history": medical_history,
+                    "admitted_date": admitted_date,
+                    "admitted_time": admitted_time,
+                    "insurance_id": insurance_id,
+                    "status": status
+                }
+                patients_collection.update_one({"patient_id": update_patient_id}, {"$set": updated_patient})
+                st.success("Patient updated successfully!")
+        else:
+            st.error("No patient found with the given Patient ID.")
+
+# Form for deleting a patient
+elif option == "Delete Patient":
+    st.header("Delete Patient")
+    patient_id = st.text_input("Patient ID to delete")
+
+    if st.button("Delete Patient"):
+        if patient_id:
+            result = patients_collection.delete_one({"patient_id": patient_id})
+            if result.deleted_count > 0:
+                st.success("Patient deleted successfully!")
+            else:
+                st.error("No patient found with the given Patient ID.")
+        else:
+            st.error("Please provide a valid Patient ID.")
